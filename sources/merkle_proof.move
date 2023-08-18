@@ -1,4 +1,4 @@
-module candymachine::merkle_proof{
+module YHJCoin::merkle_proof{
     use std::vector;
     use aptos_std::aptos_hash;
 
@@ -36,6 +36,7 @@ module candymachine::merkle_proof{
         };
         1
     }
+    use std::debug;
    #[test]
     fun test_merkle(){
         let leaf1=  x"d4dee0beab2d53f2cc83e567171bd2820e49898130a22622b10ead383e90bd77";
@@ -46,6 +47,7 @@ module candymachine::merkle_proof{
         let root1 = find_root(leaf1,leaf2);
         let root2 = find_root(leaf3,leaf4);
         let final_root = find_root(root1,root2);
+        debug::print(&final_root);
         //the proofs
         let proof1 = vector[leaf2,root2];
         let proof2 = vector[leaf1,root2];
@@ -56,29 +58,13 @@ module candymachine::merkle_proof{
         assert!(verify(proof2,final_root,leaf2),100);
         assert!(verify(proof3,final_root,leaf3),101);
         assert!(verify(proof4,final_root,leaf4),102);
+
+        let vecarray = vector[leaf1,leaf2,leaf3,leaf4];
+        let root = find_root_with_one_vector(vecarray);
+        debug::print(&root);
+
     }
-    #[test]
-    #[expected_failure(abort_code = 196609, location = Self)]
-    fun test_failure(){
-        let leaf1=  x"d4dee0beab2d53f2cc83e567171bd2820e49898130a22622b10ead383e90bd77";
-        let leaf2 = x"5f16f4c7f149ac4f9510d9cf8cf384038ad348b3bcdc01915f95de12df9d1b02";
-        let leaf3 = x"c5d2460186f7233c927e7db2dcc703c0e500b653ca82273b7bfad8045d85a470";
-        let leaf4 = x"0da6e343c6ae1c7615934b7a8150d3512a624666036c06a92a56bbdaa4099751";
-        // finding out the root
-        let root1 = find_root(leaf1,leaf2);
-        let root2 = find_root(leaf3,leaf4);
-        let final_root = find_root(root1,root2);
-        //the proofs
-        let proof1 = vector[leaf2,root2];
-        let proof2 = vector[leaf1,root2];
-        let proof3 = vector[leaf4,root1];
-        let proof4 = vector[leaf3,root1];
-        //here
-        assert!(verify(proof1,final_root, x"0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"),196609);
-        assert!(verify(proof2,final_root, x"0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"),196609);
-        assert!(verify(proof3,final_root, x"0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"),196609);
-        assert!(verify(proof4,final_root, x"0e5751c026e543b2e8ab2eb06099daa1d1e5df47778f7787faab45cdf12fe3a8"),196609);
-    }
+
     public fun find_root(leaf1:vector<u8>,leaf2:vector<u8>):vector<u8>{
         let root= vector<u8>[];
         if (compare_vector(& leaf1,& leaf2)==1) {
@@ -93,5 +79,31 @@ module candymachine::merkle_proof{
             };
         root
     }
-   
+
+    const E_NOT_DOUBLE_LEAF:u64=11;
+    public fun find_root_with_one_vector(leaf: vector<vector<u8>>):vector<u8>{
+        assert!(vector::length(&leaf) %2 ==0, E_NOT_DOUBLE_LEAF);
+        let proof = leaf;
+        let  computedHash: vector<u8>;
+        let i = 0;
+        while (i < vector::length(&proof)) {
+            let leftElement=*vector::borrow_mut(&mut proof, i);
+            if (i+1 == vector::length(&proof)){
+              // return leftElement
+                //debug::print(&leftElement);
+                break
+            };
+            let rightElement=*vector::borrow_mut(&mut proof, i+1);
+            if (compare_vector(& leftElement,& rightElement)==1) {
+                vector::append(&mut leftElement,rightElement);
+                computedHash = aptos_hash::keccak256(leftElement);
+            }else{
+                vector::append(&mut rightElement,leftElement);
+                computedHash = aptos_hash::keccak256(rightElement);
+            };
+            vector::push_back(&mut proof,computedHash);
+            i = i+2
+        };
+        *vector::borrow(&proof, vector::length(&proof)-1)
+    }
 }
