@@ -26,9 +26,11 @@ module candymachine::candymachine{
     const EPAUSED:u64 = 6;
     const INVALID_MUTABLE_CONFIG:u64 = 7;
     const EINVALID_MINT_TIME:u64 = 8;
-    const MINT_LIMIT_EXCEED: u64 = 9;
-    const INVALID_PROOF:u64 = 10;
-    const WhitelistMintNotEnabled: u64 = 11;
+    const EINVALID_PRE_MINT_TIME:u64 = 9;
+    const EINVALID_PUBLIC_MINT_TIME:u64 = 10;
+    const MINT_LIMIT_EXCEED: u64 = 11;
+    const INVALID_PROOF:u64 = 12;
+    const WhitelistMintNotEnabled: u64 = 13;
     const MokshyaFee: address = @0x305d730682a5311fbfc729a51b8eec73924b40849bff25cf9fdb4348cc0a719a;
 
      struct MintData has key {
@@ -183,7 +185,7 @@ module candymachine::candymachine{
         };
         mint(receiver,candymachine,candy_data.presale_mint_price);
     }
-    
+
     fun mint(
         receiver: &signer,
         candymachine: address,
@@ -302,11 +304,11 @@ module candymachine::candymachine{
             candy_data.royalty_points_numerator = royalty_points_numerator
         };
         if (presale_mint_time>0){
-            assert!(presale_mint_time >= now,EINVALID_MINT_TIME);
+            assert!(presale_mint_time >= now,EINVALID_PRE_MINT_TIME);
             candy_data.presale_mint_time = presale_mint_time
         };
         if (public_sale_mint_time>0){
-            assert!(public_sale_mint_time > candy_data.presale_mint_time,EINVALID_MINT_TIME);
+            assert!(public_sale_mint_time > candy_data.presale_mint_time,EINVALID_PUBLIC_MINT_TIME);
             candy_data.public_sale_mint_time = public_sale_mint_time
         };
         if (candy_data.public_sale_mint_price==0 || candy_data.presale_mint_price==0){
