@@ -40,8 +40,8 @@ module candymachine::candymachine{
         collection_description: String,
         baseuri: String,
         royalty_payee_address:address,
-        royalty_points_denominator: u64,
-        royalty_points_numerator: u64,
+        royalty_points_denominator: u64, //fenmu
+        royalty_points_numerator: u64, //fenzi
         presale_mint_time: u64,
         public_sale_mint_time: u64,
         presale_mint_price: u64,
@@ -79,6 +79,7 @@ module candymachine::candymachine{
             total_apt: 0
         })
     }
+
     public entry fun init_candy(
         account: &signer,
         collection_name: String,
@@ -135,6 +136,8 @@ module candymachine::candymachine{
             collection_mutate_setting
         );
     }
+
+
     public entry fun mint_script(
         receiver: &signer,
         candymachine: address,
@@ -145,6 +148,7 @@ module candymachine::candymachine{
         assert!(now > candy_data.public_sale_mint_time, ESALE_NOT_STARTED);
         mint(receiver,candymachine,mint_price)
     }
+
     public entry fun mint_from_merkle(
         receiver: &signer,
         candymachine: address,
@@ -179,6 +183,7 @@ module candymachine::candymachine{
         };
         mint(receiver,candymachine,candy_data.presale_mint_price);
     }
+    
     fun mint(
         receiver: &signer,
         candymachine: address,

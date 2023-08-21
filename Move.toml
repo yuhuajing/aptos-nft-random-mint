@@ -3,7 +3,7 @@ name = 'candymachine'
 version = '1.0.0'
 
 [addresses]
-candymachine = "_"
+candymachine = "0x5e82826266ac639ba5c87a621cba724d7752cfc95d02043f425a261451c2c4a6"
 Std = "0x1"
 aptos_std = "0x1"
 

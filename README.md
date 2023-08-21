@@ -1,8 +1,17 @@
 Random NFT mint smart contract for Aptos Blockchain. The smart contract is available in mainnet and testnet. For detail information please go to our [docs](https://docs.mokshya.io)
 
-Mainnet contract : 0x80e3b899589c5e4700b8eca726d25d62f701af834f8a937652a19c3e42d36490
+Mainnet contract : 0x25d440284ca6c13afadb0e83ff1bccacbaa75175551111d8b7cb5d2854e708f0
 
-Testnet contract : 0x80e3b899589c5e4700b8eca726d25d62f701af834f8a937652a19c3e42d36490
+source_address Contract:  0x8d0bcecc1ad9da703b30c8067b76bd954edd95dfe9c5936d638bb65dd393a27e
+
+admin_account : 0xf42c8f5e4c13b796b4c729bb78cc8e5632b00eb4eaba3857d2272af4bb49d4a3 (which is the address that initiates the source address)
+
+
+
+1. 部署合约
+2. 执行init_candy方法，创建资源账户和指定admin管理地址
+3. 用户执行mint操作，mint资源的限制条件都写在资源账户中。
+4. 合约更新可以通过更新资源账户地址，通过重新提供参数部署资源合约地址进行执行合约的更新操作
 
 # Quick Installation 
 
