@@ -1,4 +1,4 @@
-module candymachine::candymachinev2{
+module candymachine::candymachinev3{
     use std::signer;
     use std::bcs;
     use std::hash;
@@ -8,13 +8,13 @@ module candymachine::candymachinev2{
     use std::vector;
     use aptos_framework::event::{Self, EventHandle};
     use aptos_framework::aptos_coin::AptosCoin;
-    use candymachine::bit_vectorv2::{Self,BitVector};
+    use candymachine::bit_vectorv3::{Self,BitVector};
     use aptos_framework::coin::{Self};
     use aptos_framework::account;
     use aptos_framework::timestamp;
     use aptos_token::token::{Self};
-    use candymachine::bucket_tablev2::{Self, BucketTable};
-    use candymachine::merkle_proofv2::{Self};
+    use candymachine::bucket_tablev3::{Self, BucketTable};
+    use candymachine::merkle_proofv3::{Self};
 
 
     const INVALID_SIGNER: u64 = 0;
@@ -26,12 +26,12 @@ module candymachine::candymachinev2{
     const EPAUSED:u64 = 6;
     const INVALID_MUTABLE_CONFIG:u64 = 7;
     const EINVALID_MINT_TIME:u64 = 8;
-    const EINVALID_PRE_MINT_TIME:u64 = 9;
-    const EINVALID_PUBLIC_MINT_TIME:u64 = 10;
-    const MINT_LIMIT_EXCEED: u64 = 11;
-    const INVALID_PROOF:u64 = 12;
-    const WhitelistMintNotEnabled: u64 = 13;
-    const MokshyaFee: address = @0x961abe79017867051be0a6e3aa2b7caa1304339516a8a8e7cc60ef7a1fd9fb71;
+    const EINVALID_PRE_MINT_TIME:u64 = 12;
+    const EINVALID_PUBLIC_MINT_TIME:u64 = 13;
+    const MINT_LIMIT_EXCEED: u64 = 9;
+    const INVALID_PROOF:u64 = 10;
+    const WhitelistMintNotEnabled: u64 = 11;
+    const MokshyaFee: address = @0x305d730682a5311fbfc729a51b8eec73924b40849bff25cf9fdb4348cc0a719a;
 
      struct MintData has key {
         total_mints: u64,
@@ -122,7 +122,7 @@ module candymachine::candymachinev2{
             total_supply,
             minted:0,
             paused:false,
-            candies:bit_vectorv2::new(total_supply),
+            candies:bit_vectorv3::new(total_supply),
             token_mutate_setting,
             public_mint_limit: public_mint_limit,
             merkle_root: vector::empty(),
@@ -169,24 +169,41 @@ module candymachine::candymachinev2{
         vector::append(&mut leafvec,bcs::to_bytes(&mint_limit));
         let is_whitelist_mint = candy_data.presale_mint_time < now && now < candy_data.public_sale_mint_time;
         assert!(is_whitelist_mint, WhitelistMintNotEnabled);
-        assert!(merkle_proofv2::verify(proof,candy_data.merkle_root,aptos_hash::keccak256(leafvec)),INVALID_PROOF);
+        assert!(merkle_proofv3::verify(proof,candy_data.merkle_root,aptos_hash::keccak256(leafvec)),INVALID_PROOF);
         if(!exists<Whitelist>(candymachine)){
             initialize_whitelist(resource_signer_from_cap)
         };
         // No need to check limit if mint limit = 0, this means the minter can mint unlimited amount of tokens
         if(mint_limit != 0){
             let whitelist_data = borrow_global_mut<Whitelist>(candymachine);
-            if (!bucket_tablev2::contains(&whitelist_data.minters, &receiver_addr)) {
+            if (!bucket_tablev3::contains(&whitelist_data.minters, &receiver_addr)) {
                 // First time minting mint limit = 0 
-                bucket_tablev2::add(&mut whitelist_data.minters, receiver_addr, 0);
+                bucket_tablev3::add(&mut whitelist_data.minters, receiver_addr, 0);
             };
-            let minted_nft = bucket_tablev2::borrow_mut(&mut whitelist_data.minters, receiver_addr);
+            let minted_nft = bucket_tablev3::borrow_mut(&mut whitelist_data.minters, receiver_addr);
             assert!(*minted_nft != mint_limit, MINT_LIMIT_EXCEED);
             *minted_nft = *minted_nft + 1;
             mint_data.total_apt=mint_data.total_apt+candy_data.presale_mint_price;
         };
         mint(receiver,candymachine,candy_data.presale_mint_price);
     }
+
+     public entry fun transfer_nft(
+        from: &signer,
+        candymachine: address,
+        to:address,
+        token_name:String,
+        token_property_version:u64,
+        amount:u64,
+    )acquires ResourceInfo, CandyMachine{
+        let candy_data = borrow_global_mut<CandyMachine>(candymachine);
+        let collection_name = candy_data.collection_name;
+        let resource_data = borrow_global<ResourceInfo>(candymachine);
+        let resource_signer_from_cap = account::create_signer_with_capability(&resource_data.resource_cap);
+        let creator = signer::address_of(&resource_signer_from_cap);        
+        let token_id = token::create_token_id_raw(creator, collection_name, token_name, token_property_version);
+        token::transfer(from, token_id, to, amount);
+    }       
 
     fun mint(
         receiver: &signer,
@@ -211,7 +228,7 @@ module candymachine::candymachinev2{
         let pos=0; // the mint number 
         while (required_position < random_index)
         {
-        if (!bit_vectorv2::is_index_set(&candy_data.candies, pos))
+        if (!bit_vectorv3::is_index_set(&candy_data.candies, pos))
             {
                 required_position=required_position+1;
 
@@ -222,7 +239,7 @@ module candymachine::candymachinev2{
             };
             pos=pos+1;
         };
-        bit_vectorv2::set(&mut candy_data.candies,pos);
+        bit_vectorv3::set(&mut candy_data.candies,pos);
         let mint_position = pos;
         let baseuri = candy_data.baseuri;
         let properties = vector::empty<String>();
@@ -444,7 +461,7 @@ module candymachine::candymachinev2{
 
     fun initialize_whitelist(account: signer){
         move_to(&account, Whitelist {
-            minters: bucket_tablev2::new<address, u64>(4),
+            minters: bucket_tablev3::new<address, u64>(4),
         })
     }
 
@@ -454,15 +471,15 @@ module candymachine::candymachinev2{
                 // Can use a different size of bucket table depending on how big we expect the whitelist to be.
                 // Here because a global pubic minting max is optional, we are starting with a smaller size
                 // bucket table.
-                minters: bucket_tablev2::new<address, u64>(4),
+                minters: bucket_tablev3::new<address, u64>(4),
                 })
             };
             let public_minters= borrow_global_mut<PublicMinters>(candymachine);
-            if (!bucket_tablev2::contains(&public_minters.minters, &receiver_addr)) {
-                    bucket_tablev2::add(&mut public_minters.minters, receiver_addr, candy_data.public_mint_limit);
+            if (!bucket_tablev3::contains(&public_minters.minters, &receiver_addr)) {
+                    bucket_tablev3::add(&mut public_minters.minters, receiver_addr, candy_data.public_mint_limit);
             };
             // add check for public mint limit
-            let public_minters_limit= bucket_tablev2::borrow_mut(&mut public_minters.minters, receiver_addr);
+            let public_minters_limit= bucket_tablev3::borrow_mut(&mut public_minters.minters, receiver_addr);
             assert!(*public_minters_limit != 0, MINT_LIMIT_EXCEED);
             *public_minters_limit = *public_minters_limit - 1;
     }
@@ -489,7 +506,7 @@ module candymachine::candymachinev2{
         vector::append(&mut add2,bcs::to_bytes(&mint_limit));
         let leaf1 = aptos_hash::keccak256(add1);
         let leaf2 = aptos_hash::keccak256(add2);
-        let root = merkle_proofv2::find_root(leaf1,leaf2);
+        let root = merkle_proofv3::find_root(leaf1,leaf2);
         account::create_account_for_test(signer::address_of(creator));
         account::create_account_for_test(MokshyaFee);
         account::create_account_for_test(signer::address_of(minter));
